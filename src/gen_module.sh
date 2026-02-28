@@ -62,7 +62,7 @@ fi
 python_bin=$(command -v "${PYTHON_BIN}")
 
 echo "Checking if Python version meets the requirements ..."
-IFS=" " read -r -a python_version <<< "$(${python_bin} -c 'import sys; print(sys.version_info[:])' | tr -d '(),')"
+IFS=" " read -r -a python_version <<< "$("${python_bin}" -c 'import sys; print(sys.version_info[:])' | tr -d '(),')"
 if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 11 ]]; then
     echo "Error: Unsupported python version \"${python_version[0]}.${python_version[1]}\". Requiring python 3.11 or higher."
     exit 1
@@ -132,7 +132,7 @@ cd "${current_dir}"
 # Generate rst if sphinx_doc_gen.py is newer than output directory
 if [[ "${tmp_dir}/sphinx-in" -ot "${source_dir}/doc/python_api/sphinx_doc_gen.py" ]]; then
     apply_workaround
-    ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${source_dir}/doc/python_api/sphinx_doc_gen.py" -- --output "${tmp_dir}"
+    "${blender_bin}" --background --factory-startup -noaudio --python-exit-code 1 --python "${source_dir}/doc/python_api/sphinx_doc_gen.py" -- --output "${tmp_dir}"
     revert_workaround
     touch "${tmp_dir}/sphinx-in"
     rm -rf "${tmp_dir}/sphinx-in.orig"
@@ -232,11 +232,11 @@ generated_mod_dir=${SCRIPT_DIR}/mods/generated_mods
 # generate modfiles if gen_modfile.py is newer
 [ ! -d "${generated_mod_dir}" ] && mkdir -p "${generated_mod_dir}"
 if [[ "${generated_mod_dir}/gen_modules_modfile" -ot "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" ]]; then
-    ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m addon_utils -o "${generated_mod_dir}/gen_modules_modfile" -f rst
+    "${blender_bin}" --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m addon_utils -o "${generated_mod_dir}/gen_modules_modfile" -f rst
     touch "${generated_mod_dir}/gen_modules_modfile"
 fi
 if [[ "${generated_mod_dir}/gen_startup_modfile" -ot "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" ]]; then
-    ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m keyingsets_builtins -a -o "${generated_mod_dir}/gen_startup_modfile" -f rst
+    "${blender_bin}" --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m keyingsets_builtins -a -o "${generated_mod_dir}/gen_startup_modfile" -f rst
     touch "${generated_mod_dir}/gen_startup_modfile"
 fi
 
@@ -248,7 +248,7 @@ fi
 if [ -e "${bgl_c_file}" ]; then
     if [[ "${generated_mod_dir}/gen_bgl_modfile/bgl.mod.rst" -ot "${SCRIPT_DIR}/gen_modfile/gen_bgl_modfile.py" || "${generated_mod_dir}/gen_bgl_modfile/bgl.mod.rst" -ot "${bgl_c_file}" ]]; then
         mkdir -p "${generated_mod_dir}/gen_bgl_modfile"
-        ${python_bin} "${SCRIPT_DIR}/gen_modfile/gen_bgl_modfile.py" -i "${bgl_c_file}" -o "${generated_mod_dir}/gen_bgl_modfile/bgl.mod.rst" -f rst
+        "${python_bin}" "${SCRIPT_DIR}/gen_modfile/gen_bgl_modfile.py" -i "${bgl_c_file}" -o "${generated_mod_dir}/gen_bgl_modfile/bgl.mod.rst" -f rst
     fi
 fi
 
@@ -260,10 +260,10 @@ fi
 echo "Generating fake bpy modules ..."
 if [ "${mod_version}" = "not-specified" ]; then
     # shellcheck disable=SC2086
-    ${python_bin} ${python_args} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}"
+    "${python_bin}" ${python_args} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}"
 else
     # shellcheck disable=SC2086
-    ${python_bin} ${python_args} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}" -m "${mod_version}"
+    "${python_bin}" ${python_args} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}" -m "${mod_version}"
 fi
 
 echo "Cleaning up ..."
