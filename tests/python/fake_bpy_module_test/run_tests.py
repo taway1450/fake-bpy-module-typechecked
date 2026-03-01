@@ -13,7 +13,8 @@ def parse_options(config: FakeBpyModuleTestConfig) -> None:
     usage = f"Usage: python {__file__} [-p <modules_path>]"
     parser = argparse.ArgumentParser(usage)
     parser.add_argument(
-        "-p", dest="modules_path", type=str, help="fake-module path")
+        "-p", dest="modules_path", type=str, help="fake-module path"
+    )
 
     args = parser.parse_args()
     if args.modules_path:
@@ -28,11 +29,11 @@ def main() -> None:
     sys.path.append(str(path))
 
     sys.path.append(str(Path(__file__).parent))
-    import fake_bpy_module_test     # pylint: disable=C0415  # noqa: I001
+    import fake_bpy_module_test  # pylint: disable=C0415  # noqa: I001
 
     test_cases = [
         fake_bpy_module_test.analyzer_test.BaseAnalyzerTest,
-
+        fake_bpy_module_test.common_member_hoister_test.CommonMemberHoisterTest,
         fake_bpy_module_test.generator_test.CodeWriterIndentTest,
         fake_bpy_module_test.generator_test.CodeWriterTest,
         fake_bpy_module_test.generator_test.SortedEntryPointNodesTest,
@@ -40,7 +41,6 @@ def main() -> None:
         fake_bpy_module_test.generator_test.PyInterfaceWriterTest,
         fake_bpy_module_test.generator_test.JsonWriterTest,
         fake_bpy_module_test.generator_test.CodeDocumentNodeTranslatorTest,
-
         fake_bpy_module_test.transformer_test.BaseClassFixtureTest,
         fake_bpy_module_test.transformer_test.BpyContextVariableConverterTest,
         fake_bpy_module_test.transformer_test.BpyModuleTweakerTest,
@@ -61,9 +61,7 @@ def main() -> None:
         fake_bpy_module_test.transformer_test.FirstTitleRemoverTest,
         fake_bpy_module_test.transformer_test.FormatValidatorTest,
         fake_bpy_module_test.transformer_test.UtilsTest,
-
         fake_bpy_module_test.integration_test.IntegrationTest,
-
         fake_bpy_module_test.utils_test.UtilsTest,
     ]
 

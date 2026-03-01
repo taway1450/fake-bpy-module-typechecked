@@ -5,6 +5,7 @@ from .bpy_context_variable_converter import BpyContextVariableConverter
 from .bpy_module_tweaker import BpyModuleTweaker
 from .cannonical_data_type_rewriter import CannonicalDataTypeRewriter
 from .code_document_refiner import CodeDocumentRefiner
+from .common_member_hoister import CommonMemberHoister
 from .data_type_refiner import DataTypeRefiner
 from .default_value_filler import DefaultValueFiller
 from .dependency_builder import DependencyBuilder
@@ -22,48 +23,46 @@ from .target_file_combiner import TargetFileCombiner
 from .transformer_base import TransformerBase
 
 
-def transform(documents: list[nodes.document],
-              mod_files: list[str]) -> list[nodes.document]:
-    t = Transformer([
-        # Must before base_class_fixture
-        "rna_enum_converter",
-        "module_name_fixture",
-        "first_title_remover",
-        "rst_specific_node_cleaner",
-
-        "base_class_fixture",
-
-        # Must after base_class_fixture
-        "same_module_merger",
-        "module_level_attribute_fixture",
-        "bpy_module_tweaker",
-        "bpy_context_variable_converter",
-        "mod_applier",
-        "format_validator",
-
-        # Must after mod_applier
-        "target_file_combiner",
-        "data_type_refiner",
-
-        # Must after data_type_refiner
-        "duplication_remover",
-        "default_value_filler",
-        "cannonical_data_type_rewriter",
-        "self_rewriter",
-        "dependency_builder",
-        "code_document_refiner",
-    ], {
-        "mod_applier": {
-            "mod_files": mod_files
-        }
-    })
+def transform(
+    documents: list[nodes.document], mod_files: list[str]
+) -> list[nodes.document]:
+    t = Transformer(
+        [
+            # Must before base_class_fixture
+            "rna_enum_converter",
+            "module_name_fixture",
+            "first_title_remover",
+            "rst_specific_node_cleaner",
+            "base_class_fixture",
+            # Must after base_class_fixture
+            "same_module_merger",
+            "module_level_attribute_fixture",
+            "bpy_module_tweaker",
+            "bpy_context_variable_converter",
+            "mod_applier",
+            "format_validator",
+            # Must after mod_applier
+            "target_file_combiner",
+            "data_type_refiner",
+            # Must after data_type_refiner
+            "duplication_remover",
+            "default_value_filler",
+            "common_member_hoister",
+            "cannonical_data_type_rewriter",
+            "self_rewriter",
+            "dependency_builder",
+            "code_document_refiner",
+        ],
+        {"mod_applier": {"mod_files": mod_files}},
+    )
 
     return t.transform(documents)
 
 
 class Transformer:
-    def __init__(self, transform_kinds: list[str],
-                 parameters: dict | None = None) -> None:
+    def __init__(
+        self, transform_kinds: list[str], parameters: dict | None = None
+    ) -> None:
         self.transform_kinds: list[str] = transform_kinds
         self.init_parameters: dict = {}
         if parameters is not None:
@@ -73,8 +72,9 @@ class Transformer:
     def get_transformers(self) -> list[TransformerBase]:
         return self.transformers
 
-    def transform(self, documents: list[nodes.document],
-                  parameters: dict | None = None) -> list[nodes.document]:
+    def transform(
+        self, documents: list[nodes.document], parameters: dict | None = None
+    ) -> list[nodes.document]:
         transformer_specs = {
             BaseClassFixture.name(): {
                 "class": BaseClassFixture,
@@ -117,6 +117,9 @@ class Transformer:
             },
             CodeDocumentRefiner.name(): {
                 "class": CodeDocumentRefiner,
+            },
+            CommonMemberHoister.name(): {
+                "class": CommonMemberHoister,
             },
             SameModuleMerger.name(): {
                 "class": SameModuleMerger,

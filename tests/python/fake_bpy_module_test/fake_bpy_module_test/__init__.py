@@ -1,5 +1,6 @@
 from . import (
     analyzer_test,
+    common_member_hoister_test,
     generator_test,
     integration_test,
     transformer_test,
@@ -8,6 +9,7 @@ from . import (
 
 __all__ = [
     "analyzer_test",
+    "common_member_hoister_test",
     "generator_test",
     "integration_test",
     "transformer_test",
