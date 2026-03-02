@@ -12,6 +12,7 @@ from fake_bpy_module.analyzer.nodes import (
     ClassNode,
     DataTypeListNode,
     DataTypeNode,
+    DescriptionNode,
     FunctionListNode,
     FunctionNode,
     FunctionReturnNode,
@@ -319,6 +320,28 @@ class CommonMemberHoister(TransformerBase):
 
         return funcs_to_hoist
 
+    def _merge_descriptions(
+        self, matching_nodes: dict[str, AttributeNode | FunctionNode]
+    ) -> str:
+        desc_groups: dict[str, list[str]] = {}
+        for child_fqn, node in matching_nodes.items():
+            desc = node.element(DescriptionNode).astext().strip()
+            desc_groups.setdefault(desc, []).append(child_fqn)
+
+        if len(desc_groups) == 1:
+            return next(iter(desc_groups.keys()))
+
+        combined_parts = []
+        for desc, fqns in desc_groups.items():
+            class_names = [f"`{fqn.split('.')[-1]}`" for fqn in fqns]
+            class_names_str = ", ".join(class_names)
+            if desc:
+                combined_parts.append(f"{class_names_str}\n\n{desc}")
+            else:
+                combined_parts.append(f"{class_names_str}")
+
+        return "\n\n".join(combined_parts)
+
     def _hoist_common_members(
         self,
         parent_fqn: str,
@@ -336,8 +359,20 @@ class CommonMemberHoister(TransformerBase):
         for matching_attrs in common_attrs:
             first_attr = next(iter(matching_attrs.values()))
             new_attr = first_attr.deepcopy()
+
+            merged_desc_str = self._merge_descriptions(matching_attrs)
+            desc_groups = set(node.element(DescriptionNode).astext().strip() for node in matching_attrs.values())
+            has_different_descriptions = len(desc_groups) > 1
+
+            desc_node = new_attr.element(DescriptionNode)
+            desc_node.children.clear()
+            if merged_desc_str:
+                desc_node.add_text(merged_desc_str)
+
             parent_attr_list.append_child(new_attr)
             for child_fqn, attr_node in matching_attrs.items():
+                if has_different_descriptions:
+                    continue
                 child_attr_list = registry[child_fqn].class_node.element(
                     AttributeListNode
                 )
@@ -351,8 +386,20 @@ class CommonMemberHoister(TransformerBase):
         for matching_funcs in common_funcs:
             first_func = next(iter(matching_funcs.values()))
             new_func = first_func.deepcopy()
+
+            merged_desc_str = self._merge_descriptions(matching_funcs)
+            desc_groups = set(node.element(DescriptionNode).astext().strip() for node in matching_funcs.values())
+            has_different_descriptions = len(desc_groups) > 1
+
+            desc_node = new_func.element(DescriptionNode)
+            desc_node.children.clear()
+            if merged_desc_str:
+                desc_node.add_text(merged_desc_str)
+
             parent_func_list.append_child(new_func)
             for child_fqn, func_node in matching_funcs.items():
+                if has_different_descriptions:
+                    continue
                 child_func_list = registry[child_fqn].class_node.element(
                     FunctionListNode
                 )

@@ -20,6 +20,7 @@ from fake_bpy_module.analyzer.nodes import (
     ClassNode,
     DataTypeListNode,
     DataTypeNode,
+    DescriptionNode,
     FunctionListNode,
     FunctionNode,
     FunctionReturnNode,
@@ -69,10 +70,13 @@ def _add_class(doc, class_name, base_class_fqns=None):
     return cls
 
 
-def _add_attribute(class_node, attr_name, attr_type):
+def _add_attribute(class_node, attr_name, attr_type, description=None):
     """Add an AttributeNode to a class."""
     attr = AttributeNode.create_template()
     attr.element(NameNode).add_text(attr_name)
+    if description is not None:
+        attr.element(DescriptionNode).children.clear()
+        attr.element(DescriptionNode).add_text(description)
     dt = DataTypeNode(text=attr_type)
     attr.element(DataTypeListNode).append_child(dt)
     class_node.element(AttributeListNode).append_child(attr)
@@ -80,7 +84,7 @@ def _add_attribute(class_node, attr_name, attr_type):
 
 
 def _add_method(
-    class_node, method_name, args=None, return_type=None, function_type="method"
+    class_node, method_name, args=None, return_type=None, function_type="method", description=None
 ):
     """Add a FunctionNode (method) to a class.
 
@@ -90,6 +94,9 @@ def _add_method(
     func = FunctionNode.create_template()
     func.attributes["function_type"] = function_type
     func.element(NameNode).add_text(method_name)
+    if description is not None:
+        func.element(DescriptionNode).children.clear()
+        func.element(DescriptionNode).add_text(description)
     if args:
         arg_list = func.element(ArgumentListNode)
         for arg_name, arg_type in args:
@@ -775,3 +782,86 @@ class CommonMemberHoisterTest(common.FakeBpyModuleTestBase):
         self.assertIn("sibling_attr", _get_attr_names(grandparent))
         self.assertNotIn("sibling_attr", _get_attr_names(parent))
         self.assertNotIn("sibling_attr", _get_attr_names(uncle))
+
+    # ----------------------------------------------------------------
+    # Test 21: Docstring merging.
+    #   When descriptions are same, it is just copied.
+    #   When different, it is combined.
+    # ----------------------------------------------------------------
+    def test_docstring_merging(self):
+        doc = _make_document()
+        _add_module(doc, "mod_a")
+        parent = _add_class(doc, "Parent")
+        child_a = _add_class(doc, "ChildA", base_class_fqns=["mod_a.Parent"])
+        child_b = _add_class(doc, "ChildB", base_class_fqns=["mod_a.Parent"])
+        child_c = _add_class(doc, "ChildC", base_class_fqns=["mod_a.Parent"])
+
+        # 1. Same description -> Just copied
+        _add_attribute(child_a, "same_desc_attr", "int", description="Common description.")
+        _add_attribute(child_b, "same_desc_attr", "int", description="Common description.")
+        _add_attribute(child_c, "same_desc_attr", "int", description="Common description.")
+
+        # 2. Different descriptions -> Combined
+        _add_attribute(child_a, "diff_desc_attr", "float", description="Desc A")
+        _add_attribute(child_b, "diff_desc_attr", "float", description="Desc B")
+        _add_attribute(child_c, "diff_desc_attr", "float", description="Desc C")
+
+        # 3. Partially same descriptions -> Groups
+        _add_method(
+            child_a, "partial_desc_func", args=[], return_type="bool", description="Group 1"
+        )
+        _add_method(
+            child_b, "partial_desc_func", args=[], return_type="bool", description="Group 1"
+        )
+        _add_method(
+            child_c, "partial_desc_func", args=[], return_type="bool", description="Group 2"
+        )
+        
+        # 4. Empty descriptions among different descriptions
+        _add_method(
+            child_a, "empty_mixed_func", args=[], return_type="str", description="Desc text"
+        )
+        _add_method(
+            child_b, "empty_mixed_func", args=[], return_type="str", description=""
+        )
+        _add_method(
+            child_c, "empty_mixed_func", args=[], return_type="str", description="Desc text"
+        )
+
+        self._run_hoister([doc])
+
+        # Verify parent has the attributes
+        self.assertEqual(_get_attr_names(parent), {"same_desc_attr", "diff_desc_attr"})
+        self.assertEqual(_get_func_names(parent), {"partial_desc_func", "empty_mixed_func"})
+        
+        # Verify children did NOT lose different descriptions
+        self.assertEqual(_get_attr_names(child_a), {"diff_desc_attr"})
+        self.assertEqual(_get_func_names(child_a), {"partial_desc_func", "empty_mixed_func"})
+        self.assertEqual(_get_func_names(child_c), {"partial_desc_func", "empty_mixed_func"})
+
+        # Check 'same_desc_attr'
+        attr_nodes = find_children(parent.element(AttributeListNode), AttributeNode)
+        same_attr = next(a for a in attr_nodes if a.element(NameNode).astext() == "same_desc_attr")
+        self.assertEqual(same_attr.element(DescriptionNode).astext(), "Common description.")
+
+        # Check 'diff_desc_attr'
+        diff_attr = next(a for a in attr_nodes if a.element(NameNode).astext() == "diff_desc_attr")
+        self.assertEqual(
+            diff_attr.element(DescriptionNode).astext(),
+            "`ChildA`\n\nDesc A\n\n`ChildB`\n\nDesc B\n\n`ChildC`\n\nDesc C"
+        )
+
+        # Check 'partial_desc_func'
+        func_nodes = find_children(parent.element(FunctionListNode), FunctionNode)
+        partial_func = next(f for f in func_nodes if f.element(NameNode).astext() == "partial_desc_func")
+        self.assertEqual(
+            partial_func.element(DescriptionNode).astext(),
+            "`ChildA`, `ChildB`\n\nGroup 1\n\n`ChildC`\n\nGroup 2"
+        )
+
+        # Check 'empty_mixed_func'
+        empty_func = next(f for f in func_nodes if f.element(NameNode).astext() == "empty_mixed_func")
+        self.assertEqual(
+            empty_func.element(DescriptionNode).astext(),
+            "`ChildA`, `ChildC`\n\nDesc text\n\n`ChildB`"
+        )
