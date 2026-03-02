@@ -16,7 +16,7 @@ jobs:
   set_versions:
     name: Set build versions
     runs-on: ubuntu-latest
-    if: github.repository == 'nutti/fake-bpy-module'
+    if: github.repository == 'taway1450/fake-bpy-module-typechecked'
     outputs:
       module_version: ${{ steps.set_module_version.outputs.module_version }}
       file_version: ${{ steps.set_file_version.outputs.file_version }}
@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate versions
-        if: github.repository == 'nutti/fake-bpy-module'
+        if: github.repository == 'taway1450/fake-bpy-module-typechecked'
         run: python tests/validate_versions.py bpy
 
       - name: Get supported Blender versions for CI
@@ -63,7 +63,7 @@ jobs:
   build_modules:
     name: Build modules
     runs-on: ubuntu-latest
-    if: github.repository == 'nutti/fake-bpy-module'
+    if: github.repository == 'taway1450/fake-bpy-module-typechecked'
     needs: [set_versions]
     strategy:
       fail-fast: false
@@ -183,7 +183,7 @@ jobs:
     name: PyPI Release test
     needs: [set_versions, build_modules]
     if: |
-      github.repository == 'nutti/fake-bpy-module' &&
+      github.repository == 'taway1450/fake-bpy-module-typechecked' &&
       github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
@@ -208,7 +208,7 @@ jobs:
     name: PyPI Release fake-bpy-module
     needs: [set_versions, pypi_release_test]
     if: |
-      github.repository == 'nutti/fake-bpy-module' &&
+      github.repository == 'taway1450/fake-bpy-module-typechecked' &&
       github.event_name == 'release'
     runs-on: ubuntu-latest
     strategy:
@@ -231,7 +231,7 @@ jobs:
     name: Upload Artifacts to GitHub Release
     needs: [set_versions, pypi_release_test]
     if: |
-      github.repository == 'nutti/fake-bpy-module' &&
+      github.repository == 'taway1450/fake-bpy-module-typechecked' &&
       github.event_name == 'release'
     runs-on: ubuntu-latest
     strategy:
