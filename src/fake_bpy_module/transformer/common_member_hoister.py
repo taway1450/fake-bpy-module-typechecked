@@ -361,7 +361,10 @@ class CommonMemberHoister(TransformerBase):
             new_attr = first_attr.deepcopy()
 
             merged_desc_str = self._merge_descriptions(matching_attrs)
-            desc_groups = set(node.element(DescriptionNode).astext().strip() for node in matching_attrs.values())
+            desc_groups = set(
+                node.element(DescriptionNode).astext().strip()
+                for node in matching_attrs.values()
+            )
             has_different_descriptions = len(desc_groups) > 1
 
             desc_node = new_attr.element(DescriptionNode)
@@ -388,7 +391,10 @@ class CommonMemberHoister(TransformerBase):
             new_func = first_func.deepcopy()
 
             merged_desc_str = self._merge_descriptions(matching_funcs)
-            desc_groups = set(node.element(DescriptionNode).astext().strip() for node in matching_funcs.values())
+            desc_groups = set(
+                node.element(DescriptionNode).astext().strip()
+                for node in matching_funcs.values()
+            )
             has_different_descriptions = len(desc_groups) > 1
 
             desc_node = new_func.element(DescriptionNode)
