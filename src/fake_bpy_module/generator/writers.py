@@ -214,6 +214,9 @@ class PyCodeWriterBase(BaseWriter):
                 raise NotImplementedError(
                     f"func_type={func_type} is not supported")
         else:
+            if "option" in func_node.attributes:
+                if func_node.attributes["option"] == "overload":
+                    wt.addln("@typing.overload")
             wt.add(f"def {name_node.astext()}{gen_types}(")
 
         current_status: Literal['NONE', 'POSONLYARG', 'ARG', 'KWONLYARG']

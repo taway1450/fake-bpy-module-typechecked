@@ -1,0 +1,236 @@
+from docutils import nodes
+
+from fake_bpy_module.analyzer.nodes import (
+    ArgumentListNode,
+    ArgumentNode,
+    DataTypeListNode,
+    DataTypeNode,
+    FunctionNode,
+    FunctionReturnNode,
+    ModuleNode,
+    NameNode,
+    make_data_type_node,
+)
+from fake_bpy_module.utils import (
+    append_child,
+    find_children,
+    get_first_child,
+)
+
+from .transformer_base import TransformerBase
+
+# FloatVectorProperty subtype-to-return-type mapping.
+# Each entry: (tuple of Literal subtype values, return type as data_type_node
+# string using backticks for ClassRef).
+_FLOAT_VECTOR_SUBTYPE_OVERLOADS: list[tuple[tuple[str, ...], str]] = [
+    (
+        ("COLOR", "COLOR_GAMMA"),
+        "`mathutils.Color`",
+    ),
+    (
+        ("TRANSLATION", "DIRECTION", "VELOCITY", "ACCELERATION", "XYZ"),
+        "`mathutils.Vector`",
+    ),
+    (
+        ("EULER",),
+        "`mathutils.Euler`",
+    ),
+    (
+        ("QUATERNION",),
+        "`mathutils.Quaternion`",
+    ),
+]
+
+
+class BpyPropsOverloadGenerator(TransformerBase):
+    """Generate ``@typing.overload`` variants for ``bpy.props`` functions.
+
+    * **EnumProperty** - distinguishes ``str`` vs ``set[str]`` return type
+      based on the ``default`` parameter type (``str | int`` for regular
+      enums, ``set[str]`` for ``ENUM_FLAG``).
+    * **FloatVectorProperty** - distinguishes ``mathutils.Color``,
+      ``mathutils.Vector``, ``mathutils.Euler``, ``mathutils.Quaternion``
+      return types based on the ``subtype`` Literal value.
+    """
+
+    # ------------------------------------------------------------------
+    # helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _find_argument(
+        func_node: FunctionNode, arg_name: str
+    ) -> ArgumentNode | None:
+        """Return the *ArgumentNode* with the given name, or ``None``."""
+        arg_list_node = func_node.element(ArgumentListNode)
+        for arg_node in find_children(arg_list_node, ArgumentNode):
+            if arg_node.element(NameNode).astext() == arg_name:
+                return arg_node
+        return None
+
+    @staticmethod
+    def _replace_data_type_list(
+        dtype_list_node: DataTypeListNode,
+        new_types: list[DataTypeNode],
+    ) -> None:
+        """Clear *dtype_list_node* and fill it with *new_types*."""
+        for child in list(dtype_list_node.children):
+            dtype_list_node.remove(child)
+        for dtype_node in new_types:
+            dtype_list_node.append_child(dtype_node)
+
+    @staticmethod
+    def _make_skip_refine_dtype(type_str: str) -> DataTypeNode:
+        """Create a plain-text ``DataTypeNode`` marked *skip-refine*."""
+        dtype_node = DataTypeNode()
+        append_child(dtype_node, nodes.Text(type_str))
+        dtype_node.attributes["mod-option"] = "skip-refine"
+        return dtype_node
+
+    def _set_return_type(
+        self,
+        func_node: FunctionNode,
+        type_specs: list[str | DataTypeNode],
+    ) -> None:
+        """Replace the return type of *func_node*."""
+        return_node = func_node.element(FunctionReturnNode)
+        dtype_list_node = return_node.element(DataTypeListNode)
+        new_nodes = [
+            t if isinstance(t, DataTypeNode)
+            else self._make_skip_refine_dtype(t)
+            for t in type_specs
+        ]
+        self._replace_data_type_list(dtype_list_node, new_nodes)
+
+    def _set_arg_type(
+        self,
+        arg_node: ArgumentNode,
+        type_specs: list[str | DataTypeNode],
+    ) -> None:
+        """Replace the data-type list of *arg_node*."""
+        dtype_list_node = arg_node.element(DataTypeListNode)
+        new_nodes = [
+            t if isinstance(t, DataTypeNode)
+            else self._make_skip_refine_dtype(t)
+            for t in type_specs
+        ]
+        self._replace_data_type_list(dtype_list_node, new_nodes)
+
+    # ------------------------------------------------------------------
+    # EnumProperty
+    # ------------------------------------------------------------------
+
+    def _generate_enum_property_overloads(
+        self, document: nodes.document
+    ) -> None:
+        func_nodes = find_children(document, FunctionNode)
+        target_node: FunctionNode | None = None
+        for func_node in func_nodes:
+            if func_node.element(NameNode).astext() == "EnumProperty":
+                target_node = func_node
+                break
+        if target_node is None:
+            return
+
+        # We need the 'default' argument to distinguish the overloads.
+        if self._find_argument(target_node, "default") is None:
+            return
+
+        index = list(document.children).index(target_node)
+
+        # Overload 1 - non-flag enum -> str
+        str_overload = target_node.deepcopy()
+        str_overload.attributes["option"] = "overload"
+        default_arg = self._find_argument(str_overload, "default")
+        if default_arg is not None:
+            self._set_arg_type(default_arg, ["str | int | None"])
+        self._set_return_type(str_overload, ["str"])
+
+        # Overload 2 - ENUM_FLAG -> set[str]
+        set_overload = target_node.deepcopy()
+        set_overload.attributes["option"] = "overload"
+        default_arg = self._find_argument(set_overload, "default")
+        if default_arg is not None:
+            self._set_arg_type(default_arg, ["set[str] | None"])
+        self._set_return_type(set_overload, ["set[str]"])
+
+        # Replace the original node with both overloads.
+        document.remove(target_node)
+        document.insert(index, set_overload)
+        document.insert(index, str_overload)
+
+    # ------------------------------------------------------------------
+    # FloatVectorProperty
+    # ------------------------------------------------------------------
+
+    def _generate_float_vector_property_overloads(
+        self, document: nodes.document
+    ) -> None:
+        func_nodes = find_children(document, FunctionNode)
+        target_node: FunctionNode | None = None
+        for func_node in func_nodes:
+            if func_node.element(NameNode).astext() == "FloatVectorProperty":
+                target_node = func_node
+                break
+        if target_node is None:
+            return
+
+        if self._find_argument(target_node, "subtype") is None:
+            return
+
+        index = list(document.children).index(target_node)
+        overload_nodes: list[FunctionNode] = []
+
+        # Subtype-specific overloads
+        for literal_values, return_type_str in _FLOAT_VECTOR_SUBTYPE_OVERLOADS:
+            overload = target_node.deepcopy()
+            overload.attributes["option"] = "overload"
+
+            subtype_arg = self._find_argument(overload, "subtype")
+            if subtype_arg is not None:
+                literal_csv = ", ".join(f"'{v}'" for v in literal_values)
+                self._set_arg_type(
+                    subtype_arg, [f"typing.Literal[{literal_csv}]"])
+
+            ret_dtype = make_data_type_node(return_type_str)
+            ret_dtype.attributes["mod-option"] = "skip-refine"
+            self._set_return_type(overload, [ret_dtype])
+
+            overload_nodes.append(overload)
+
+        # Default overload - catches any other subtype -> original return
+        default_overload = target_node.deepcopy()
+        default_overload.attributes["option"] = "overload"
+        subtype_arg = self._find_argument(default_overload, "subtype")
+        if subtype_arg is not None:
+            self._set_arg_type(subtype_arg, ["str"])
+        overload_nodes.append(default_overload)
+
+        # Replace the original node with all overloads.
+        document.remove(target_node)
+        for i, overload in enumerate(overload_nodes):
+            document.insert(index + i, overload)
+
+    # ------------------------------------------------------------------
+    # entry points
+    # ------------------------------------------------------------------
+
+    def _apply(self, document: nodes.document) -> None:
+        module_node = get_first_child(document, ModuleNode)
+        if not module_node:
+            return
+
+        module_name = module_node.element(NameNode).astext()
+        if module_name != "bpy.props":
+            return
+
+        self._generate_enum_property_overloads(document)
+        self._generate_float_vector_property_overloads(document)
+
+    @classmethod
+    def name(cls) -> str:
+        return "bpy_props_overload_generator"
+
+    def apply(self, **kwargs: dict) -> None:  # noqa: ARG002
+        for document in self.documents:
+            self._apply(document)

@@ -3,6 +3,7 @@ from docutils import nodes
 from .base_class_fixture import BaseClassFixture
 from .bpy_context_variable_converter import BpyContextVariableConverter
 from .bpy_module_tweaker import BpyModuleTweaker
+from .bpy_props_overload_generator import BpyPropsOverloadGenerator
 from .cannonical_data_type_rewriter import CannonicalDataTypeRewriter
 from .code_document_refiner import CodeDocumentRefiner
 from .common_member_hoister import CommonMemberHoister
@@ -49,6 +50,7 @@ def transform(
             "default_value_filler",
             "common_member_hoister",
             "cannonical_data_type_rewriter",
+            "bpy_props_overload_generator",
             "self_rewriter",
             "dependency_builder",
             "code_document_refiner",
@@ -114,6 +116,9 @@ class Transformer:
             },
             CannonicalDataTypeRewriter.name(): {
                 "class": CannonicalDataTypeRewriter,
+            },
+            BpyPropsOverloadGenerator.name(): {
+                "class": BpyPropsOverloadGenerator,
             },
             CodeDocumentRefiner.name(): {
                 "class": CodeDocumentRefiner,
