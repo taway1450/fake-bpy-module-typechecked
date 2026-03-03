@@ -120,7 +120,7 @@
    :type update: collections.abc.Callable[[_GenericType1, :class:`bpy.types.Context`], None] | None
    :mod-option arg update: skip-refine
 
-   :rtype: _GenericType2
+   :rtype: _GenericType2 | None
    :mod-option rtype: skip-refine
 
 .. function:: CollectionProperty(update)
