@@ -15,6 +15,8 @@
    :type set: collections.abc.Callable[[_GenericType1, bool], None] | None
    :mod-option arg set: skip-refine
 
+   :rtype: bool
+
 .. function:: BoolVectorProperty(update, get, set)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
@@ -27,6 +29,9 @@
 
    :type set: collections.abc.Callable[[_GenericType1, collections.abc.Sequence[bool]], None] | None
    :mod-option arg set: skip-refine
+
+   :rtype: list[bool]
+   :mod-option rtype: skip-refine
 
 .. function:: EnumProperty(items, update, get, set)
 
@@ -44,6 +49,8 @@
    :type set: collections.abc.Callable[[_GenericType1, int], None] | None
    :mod-option arg set: skip-refine
 
+   :rtype: str
+
 .. function:: FloatProperty(update, get, set)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
@@ -56,6 +63,8 @@
 
    :type set: collections.abc.Callable[[_GenericType1, float], None] | None
    :mod-option arg set: skip-refine
+
+   :rtype: float
 
 .. function:: FloatVectorProperty(update, get, set)
 
@@ -70,6 +79,9 @@
    :type set: collections.abc.Callable[[_GenericType1, collections.abc.Sequence[float]], None] | None
    :mod-option arg set: skip-refine
 
+   :rtype: list[float]
+   :mod-option rtype: skip-refine
+
 .. function:: IntProperty(update, get, set)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
@@ -82,6 +94,8 @@
 
    :type set: collections.abc.Callable[[_GenericType1, int], None] | None
    :mod-option arg set: skip-refine
+
+   :rtype: int
 
 .. function:: IntVectorProperty(update, get, set)
 
@@ -96,12 +110,28 @@
    :type set: collections.abc.Callable[[_GenericType1, collections.abc.Sequence[int]], None] | None
    :mod-option arg set: skip-refine
 
+   :rtype: list[int]
+   :mod-option rtype: skip-refine
+
 .. function:: PointerProperty(update)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct, _GenericType2: bpy.types.ID
 
    :type update: collections.abc.Callable[[_GenericType1, :class:`bpy.types.Context`], None] | None
    :mod-option arg update: skip-refine
+
+   :rtype: _GenericType2
+   :mod-option rtype: skip-refine
+
+.. function:: CollectionProperty(update)
+
+   :generic-types: _GenericType1: bpy.types.bpy_struct, _GenericType2: bpy.types.bpy_struct
+
+   :type update: collections.abc.Callable[[_GenericType1, :class:`bpy.types.Context`], None] | None
+   :mod-option arg update: skip-refine
+
+   :rtype: :class:`bpy_prop_collection`\ [_GenericType2]
+   :mod-option rtype: skip-refine
 
 .. function:: StringProperty(update, get, set)
 
@@ -115,3 +145,5 @@
 
    :type set: collections.abc.Callable[[_GenericType1, str], None] | None
    :mod-option arg set: skip-refine
+
+   :rtype: str
