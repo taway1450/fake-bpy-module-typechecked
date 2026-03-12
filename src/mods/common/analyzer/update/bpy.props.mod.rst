@@ -127,9 +127,6 @@
 
    :generic-types: _GenericType1: bpy.types.bpy_struct, _GenericType2: bpy.types.bpy_struct
 
-   :type update: collections.abc.Callable[[_GenericType1, :class:`bpy.types.Context`], None] | None
-   :mod-option arg update: skip-refine
-
    :rtype: :class:`bpy_prop_collection`\ [_GenericType2]
    :mod-option rtype: skip-refine
 
