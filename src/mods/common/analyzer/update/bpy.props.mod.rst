@@ -113,9 +113,12 @@
    :rtype: list[int]
    :mod-option rtype: skip-refine
 
-.. function:: PointerProperty(update)
+.. function:: PointerProperty(type, update)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct, _GenericType2: bpy.types.ID
+
+   :type type: type[_GenericType2]
+   :mod-option arg type: skip-refine
 
    :type update: collections.abc.Callable[[_GenericType1, :class:`bpy.types.Context`], None] | None
    :mod-option arg update: skip-refine
@@ -123,11 +126,14 @@
    :rtype: _GenericType2 | None
    :mod-option rtype: skip-refine
 
-.. function:: CollectionProperty(update)
+.. function:: CollectionProperty(type)
 
-   :generic-types: _GenericType1: bpy.types.bpy_struct, _GenericType2: bpy.types.bpy_struct
+   :generic-types: _GenericType1: bpy.types.bpy_struct
 
-   :rtype: :class:`bpy_prop_collection`\ [_GenericType2]
+   :type type: type[_GenericType1]
+   :mod-option arg type: skip-refine
+
+   :rtype: :class:`bpy.types.bpy_prop_collection`\ [_GenericType1]
    :mod-option rtype: skip-refine
 
 .. function:: StringProperty(update, get, set)
