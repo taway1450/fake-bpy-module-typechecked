@@ -352,7 +352,7 @@ class PyCodeWriterBase(BaseWriter):
                     or not return_node.empty()
                 ):
                     wt.addln(
-                        f"''' " f"{process_description_str(desc_node.astext())}"
+                        f"''' {process_description_str(desc_node.astext())}"
                     )
                     wt.new_line(1)
 
@@ -612,14 +612,14 @@ class PyCodeWriterBase(BaseWriter):
             enum_item_desc = enum_item_desc.replace("\n", "")
             if len(enum_item_desc) != 0:
                 enum_item_strs.append(
-                    f"'{enum_item_name}'," f"  # {enum_item_desc}"
+                    f"'{enum_item_name}',  # {enum_item_desc}"
                 )
             else:
                 enum_item_strs.append(f"'{enum_item_name}',")
 
         enum_item_strs_lines = "\n".join(enum_item_strs)
         wt.addln(
-            f"type {enum_name} = typing.Literal[\n" f"{enum_item_strs_lines}\n]"
+            f"type {enum_name} = typing.Literal[\n{enum_item_strs_lines}\n]"
         )
 
     def write(
@@ -898,7 +898,7 @@ class JsonWriter(BaseWriter):
         filename: str,
         document: nodes.document,
         style_config: str = "none",
-    ) -> None:  # noqa: ARG002
+    ) -> None:
         sorted_data = sorted_entry_point_nodes(document)
 
         json_data = []
