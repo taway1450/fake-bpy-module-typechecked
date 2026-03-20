@@ -15,6 +15,12 @@
    :type set: collections.abc.Callable[[_GenericType1, bool], None] | None
    :mod-option arg set: skip-refine
 
+   :type default: bool
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
+
    :rtype: bool
 
 .. function:: BoolVectorProperty(update, get, set)
@@ -30,7 +36,13 @@
    :type set: collections.abc.Callable[[_GenericType1, collections.abc.Sequence[bool]], None] | None
    :mod-option arg set: skip-refine
 
-   :rtype: list[bool]
+   :type default: collections.abc.Sequence[bool] | None
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
+
+   :rtype: collections.abc.Sequence[bool]
    :mod-option rtype: skip-refine
 
 .. function:: EnumProperty(items, update, get, set)
@@ -49,6 +61,12 @@
    :type set: collections.abc.Callable[[_GenericType1, int], None] | None
    :mod-option arg set: skip-refine
 
+   :type default: str | int | set[str] | None
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
+
    :rtype: str
 
 .. function:: FloatProperty(update, get, set)
@@ -63,6 +81,12 @@
 
    :type set: collections.abc.Callable[[_GenericType1, float], None] | None
    :mod-option arg set: skip-refine
+
+   :type default: float
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
 
    :rtype: float
 
@@ -79,7 +103,13 @@
    :type set: collections.abc.Callable[[_GenericType1, collections.abc.Sequence[float]], None] | None
    :mod-option arg set: skip-refine
 
-   :rtype: list[float]
+   :type default: collections.abc.Sequence[float] | None
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
+
+   :rtype: collections.abc.Sequence[float]
    :mod-option rtype: skip-refine
 
 .. function:: IntProperty(update, get, set)
@@ -94,6 +124,12 @@
 
    :type set: collections.abc.Callable[[_GenericType1, int], None] | None
    :mod-option arg set: skip-refine
+
+   :type default: int
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
 
    :rtype: int
 
@@ -110,7 +146,13 @@
    :type set: collections.abc.Callable[[_GenericType1, collections.abc.Sequence[int]], None] | None
    :mod-option arg set: skip-refine
 
-   :rtype: list[int]
+   :type default: collections.abc.Sequence[int] | None
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
+
+   :rtype: collections.abc.Sequence[int]
    :mod-option rtype: skip-refine
 
 .. function:: PointerProperty(type, update)
@@ -123,6 +165,9 @@
    :type update: collections.abc.Callable[[_GenericType1, :class:`bpy.types.Context`], None] | None
    :mod-option arg update: skip-refine
 
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
+
    :rtype: _GenericType2 | None
    :mod-option rtype: skip-refine
 
@@ -132,6 +177,9 @@
 
    :type type: type[_GenericType1]
    :mod-option arg type: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
 
    :rtype: :class:`bpy.types.bpy_prop_collection`\ [_GenericType1]
    :mod-option rtype: skip-refine
@@ -148,5 +196,11 @@
 
    :type set: collections.abc.Callable[[_GenericType1, str], None] | None
    :mod-option arg set: skip-refine
+
+   :type default: str | None
+   :mod-option arg default: skip-refine
+
+   :type tags: set[str] | None
+   :mod-option arg tags: skip-refine
 
    :rtype: str

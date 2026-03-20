@@ -54,12 +54,6 @@ _ENUM_PROP_OPTIONS_ALL: tuple[str, ...] = (
     "ENUM_FLAG",
 )
 
-_VECTOR_SEQUENCE_TYPE_BY_FUNCTION: dict[str, str] = {
-    "BoolVectorProperty": "collections.abc.Sequence[bool]",
-    "FloatVectorProperty": "collections.abc.Sequence[float]",
-    "IntVectorProperty": "collections.abc.Sequence[int]",
-}
-
 
 class BpyPropsOverloadGenerator(TransformerBase):
     """Generate ``@typing.overload`` variants for ``bpy.props`` functions.
@@ -136,67 +130,6 @@ class BpyPropsOverloadGenerator(TransformerBase):
             for t in type_specs
         ]
         self._replace_data_type_list(dtype_list_node, new_nodes)
-
-    @staticmethod
-    def _vector_sequence_type_for_function(
-        function_name: str,
-    ) -> str | None:
-        return _VECTOR_SEQUENCE_TYPE_BY_FUNCTION.get(function_name)
-
-    def _sync_property_argument_types(self, document: nodes.document) -> None:
-        """Normalize common bpy.props argument types."""
-        func_nodes = find_children(document, FunctionNode)
-        for func_node in func_nodes:
-            name = func_node.element(NameNode).astext()
-            if not name.endswith("Property"):
-                continue
-
-            tags_arg = self._find_argument(func_node, "tags")
-            if tags_arg is not None:
-                self._set_arg_type(tags_arg, ["set[str] | None"])
-
-            default_arg = self._find_argument(func_node, "default")
-            if default_arg is None:
-                continue
-
-            default_type: str | None = None
-            if name == "BoolProperty":
-                default_type = "bool"
-            elif name == "FloatProperty":
-                default_type = "float"
-            elif name == "IntProperty":
-                default_type = "int"
-            elif name == "StringProperty":
-                default_type = "str | None"
-            elif name == "EnumProperty":
-                return_node = func_node.element(FunctionReturnNode)
-                dtype_list_node = return_node.element(DataTypeListNode)
-                ret_types = [
-                    child.astext().replace("`", "")
-                    for child in dtype_list_node.children
-                    if isinstance(child, DataTypeNode)
-                ]
-                ret_type_str = " | ".join(ret_types)
-                if ret_type_str == "set[str]":
-                    default_type = "set[str] | None"
-                else:
-                    default_type = "str | int | None"
-
-            vector_seq_type = self._vector_sequence_type_for_function(name)
-            if vector_seq_type is not None:
-                return_node = func_node.element(FunctionReturnNode)
-                dtype_list_node = return_node.element(DataTypeListNode)
-                ret_types = [
-                    child.astext().replace("`", "")
-                    for child in dtype_list_node.children
-                    if isinstance(child, DataTypeNode)
-                ]
-                ret_type_str = " | ".join(ret_types)
-                if ret_type_str:
-                    default_type = f"{ret_type_str} | {vector_seq_type} | None"
-
-            if default_type is not None:
-                self._set_arg_type(default_arg, [default_type])
 
     # ------------------------------------------------------------------
     # EnumProperty
@@ -312,12 +245,15 @@ class BpyPropsOverloadGenerator(TransformerBase):
         for i, overload in enumerate(overload_nodes):
             document.insert(index + i, overload)
 
-    def _sync_property_callbacks(self, document: nodes.document) -> None:
-        """Ensure get, set arguments match the correct return type."""
+    def _sync_overload_signatures(self, document: nodes.document) -> None:
+        """Ensure overload callback/default args match overload return type."""
         func_nodes = find_children(document, FunctionNode)
         for func_node in func_nodes:
+            if func_node.attributes.get("option") != "overload":
+                continue
+
             name = func_node.element(NameNode).astext()
-            if not name.endswith("Property"):
+            if name not in ("EnumProperty", "FloatVectorProperty"):
                 continue
 
             return_node = func_node.element(FunctionReturnNode)
@@ -337,10 +273,17 @@ class BpyPropsOverloadGenerator(TransformerBase):
                 continue
             ret_type_str = " | ".join(ret_types)
 
-            vector_seq_type = self._vector_sequence_type_for_function(name)
             callback_value_type = ret_type_str
-            if vector_seq_type is not None:
-                callback_value_type = f"{ret_type_str} | {vector_seq_type}"
+            if name == "FloatVectorProperty":
+                callback_value_type = (
+                    f"{ret_type_str} | collections.abc.Sequence[float]"
+                )
+                default_arg = self._find_argument(func_node, "default")
+                if default_arg is not None:
+                    self._set_arg_type(
+                        default_arg,
+                        [f"{callback_value_type} | None"],
+                    )
 
             get_arg = self._find_argument(func_node, "get")
             if get_arg is not None:
@@ -379,8 +322,7 @@ class BpyPropsOverloadGenerator(TransformerBase):
 
         self._generate_enum_property_overloads(document)
         self._generate_float_vector_property_overloads(document)
-        self._sync_property_argument_types(document)
-        self._sync_property_callbacks(document)
+        self._sync_overload_signatures(document)
 
     @classmethod
     def name(cls) -> str:
