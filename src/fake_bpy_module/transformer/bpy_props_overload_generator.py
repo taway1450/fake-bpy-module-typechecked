@@ -5,6 +5,7 @@ from fake_bpy_module.analyzer.nodes import (
     ArgumentNode,
     DataTypeListNode,
     DataTypeNode,
+    DefaultValueNode,
     FunctionNode,
     FunctionReturnNode,
     ModuleNode,
@@ -131,6 +132,23 @@ class BpyPropsOverloadGenerator(TransformerBase):
         ]
         self._replace_data_type_list(dtype_list_node, new_nodes)
 
+    @staticmethod
+    def _set_arg_default(
+        arg_node: ArgumentNode,
+        default_value: str | None,
+    ) -> None:
+        """Set or clear the default value of *arg_node*."""
+        default_node = arg_node.element(DefaultValueNode)
+        for child in list(default_node.children):
+            default_node.remove(child)
+        if default_value is not None:
+            append_child(default_node, nodes.Text(default_value))
+
+    @staticmethod
+    def _normalize_list_to_sequence(type_str: str) -> str:
+        """Replace ``list[...]`` with ``collections.abc.Sequence[...]``."""
+        return type_str.replace("list[", "collections.abc.Sequence[")
+
     # ------------------------------------------------------------------
     # EnumProperty
     # ------------------------------------------------------------------
@@ -225,6 +243,7 @@ class BpyPropsOverloadGenerator(TransformerBase):
                 self._set_arg_type(
                     subtype_arg, [f"typing.Literal[{literal_csv}]"]
                 )
+                self._set_arg_default(subtype_arg, None)
 
             ret_dtype = make_data_type_node(return_type_str)
             ret_dtype.attributes["mod-option"] = "skip-refine"
@@ -238,6 +257,11 @@ class BpyPropsOverloadGenerator(TransformerBase):
         subtype_arg = self._find_argument(default_overload, "subtype")
         if subtype_arg is not None:
             self._set_arg_type(subtype_arg, ["str"])
+            self._set_arg_default(subtype_arg, "'NONE'")
+        self._set_return_type(
+            default_overload,
+            ["collections.abc.Sequence[float]"],
+        )
         overload_nodes.append(default_overload)
 
         # Replace the original node with all overloads.
@@ -265,7 +289,9 @@ class BpyPropsOverloadGenerator(TransformerBase):
                 continue
 
             ret_types = [
-                child.astext().replace("`", "")
+                self._normalize_list_to_sequence(
+                    child.astext().replace("`", "")
+                )
                 for child in dtype_list_node.children
                 if isinstance(child, DataTypeNode)
             ]
@@ -275,15 +301,21 @@ class BpyPropsOverloadGenerator(TransformerBase):
 
             callback_value_type = ret_type_str
             if name == "FloatVectorProperty":
-                callback_value_type = (
-                    f"{ret_type_str} | collections.abc.Sequence[float]"
-                )
+                base_seq = "collections.abc.Sequence[float]"
+                if ret_type_str == base_seq:
+                    callback_value_type = ret_type_str
+                else:
+                    callback_value_type = f"{ret_type_str} | {base_seq}"
                 default_arg = self._find_argument(func_node, "default")
                 if default_arg is not None:
                     self._set_arg_type(
                         default_arg,
                         [f"{callback_value_type} | None"],
                     )
+
+            tags_arg = self._find_argument(func_node, "tags")
+            if tags_arg is not None:
+                self._set_arg_type(tags_arg, ["set[str] | None"])
 
             get_arg = self._find_argument(func_node, "get")
             if get_arg is not None:
