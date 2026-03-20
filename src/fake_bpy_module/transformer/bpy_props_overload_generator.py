@@ -245,6 +245,45 @@ class BpyPropsOverloadGenerator(TransformerBase):
         for i, overload in enumerate(overload_nodes):
             document.insert(index + i, overload)
 
+    def _sync_property_callbacks(self, document: nodes.document) -> None:
+        """Ensure get, set arguments match the correct return type."""
+        func_nodes = find_children(document, FunctionNode)
+        for func_node in func_nodes:
+            name = func_node.element(NameNode).astext()
+            if not name.endswith("Property"):
+                continue
+
+            return_node = func_node.element(FunctionReturnNode)
+            if not return_node:
+                continue
+
+            dtype_list_node = return_node.element(DataTypeListNode)
+            if not dtype_list_node.children:
+                continue
+
+            ret_types = [
+                child.astext().replace("`", "")
+                for child in dtype_list_node.children
+                if isinstance(child, DataTypeNode)
+            ]
+            if not ret_types:
+                continue
+            ret_type_str = " | ".join(ret_types)
+
+            get_arg = self._find_argument(func_node, "get")
+            if get_arg is not None:
+                self._set_arg_type(
+                    get_arg,
+                    [f"collections.abc.Callable[[_GenericType1], {ret_type_str}] | None"],
+                )
+
+            set_arg = self._find_argument(func_node, "set")
+            if set_arg is not None:
+                self._set_arg_type(
+                    set_arg,
+                    [f"collections.abc.Callable[[_GenericType1, {ret_type_str}], None] | None"],
+                )
+
     # ------------------------------------------------------------------
     # entry points
     # ------------------------------------------------------------------
@@ -260,6 +299,7 @@ class BpyPropsOverloadGenerator(TransformerBase):
 
         self._generate_enum_property_overloads(document)
         self._generate_float_vector_property_overloads(document)
+        self._sync_property_callbacks(document)
 
     @classmethod
     def name(cls) -> str:
