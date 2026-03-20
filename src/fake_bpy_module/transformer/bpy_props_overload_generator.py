@@ -274,14 +274,18 @@ class BpyPropsOverloadGenerator(TransformerBase):
             if get_arg is not None:
                 self._set_arg_type(
                     get_arg,
-                    [f"collections.abc.Callable[[_GenericType1], {ret_type_str}] | None"],
+                    [
+                        f"collections.abc.Callable[[_GenericType1], {ret_type_str}] | None"
+                    ],
                 )
 
             set_arg = self._find_argument(func_node, "set")
             if set_arg is not None:
                 self._set_arg_type(
                     set_arg,
-                    [f"collections.abc.Callable[[_GenericType1, {ret_type_str}], None] | None"],
+                    [
+                        f"collections.abc.Callable[[_GenericType1, {ret_type_str}], None] | None"
+                    ],
                 )
 
     # ------------------------------------------------------------------
