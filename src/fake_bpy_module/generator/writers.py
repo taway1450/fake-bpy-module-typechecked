@@ -675,9 +675,7 @@ class PyCodeWriterBase(BaseWriter):
                 for func_node in find_children(document, FunctionNode)
             )
             if has_operator_props_map:
-                wt.addln(
-                    "import bpy.stub_internal.overload_mapping"
-                )
+                wt.addln("import bpy.stub_internal.overload_mapping")
 
             # import depended modules
             dep_list_node = get_first_child(document, DependencyListNode)
