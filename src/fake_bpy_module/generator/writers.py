@@ -206,7 +206,7 @@ class PyCodeWriterBase(BaseWriter):
         if inside_class:
             if operator_props_map is not None:
                 wt.addln(
-                    "@overload_mapping("
+                    "@bpy.stub_internal.overload_mapping.overload_mapping("
                     '"operator", '
                     f"{operator_props_map}"
                     ")"
@@ -676,14 +676,8 @@ class PyCodeWriterBase(BaseWriter):
             )
             if has_operator_props_map:
                 wt.addln(
-                    "def overload_mapping("
-                    "mapped_parameter_name: str, "
-                    "operator_properties_by_name: dict[str, typing.Any]"
-                    ") -> collections.abc.Callable[[typing.Any], typing.Any]:"
+                    "import bpy.stub_internal.overload_mapping"
                 )
-                with CodeWriterIndent(1):
-                    wt.addln(self.ellipsis_strings["function"])
-                wt.new_line(1)
 
             # import depended modules
             dep_list_node = get_first_child(document, DependencyListNode)
