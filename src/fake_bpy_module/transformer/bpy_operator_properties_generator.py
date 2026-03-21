@@ -23,7 +23,6 @@ from .transformer_base import TransformerBase
 
 
 class BpyOperatorPropertiesGenerator(TransformerBase):
-
     @staticmethod
     def _class_name_from_operator_id(operator_id: str) -> str:
         sanitized = re.sub(r"[^0-9a-zA-Z_]", "_", operator_id)
@@ -164,10 +163,7 @@ class BpyOperatorPropertiesGenerator(TransformerBase):
         operator_pairs: list[tuple[str, str]],
     ) -> str:
         items = [
-            (
-                f"'{self._escaped_literal(operator_id)}': "
-                f"{return_class_name}"
-            )
+            (f"'{self._escaped_literal(operator_id)}': " f"{return_class_name}")
             for operator_id, return_class_name in operator_pairs
         ]
         return "{" + ", ".join(items) + "}"
