@@ -192,6 +192,8 @@ class PyCodeWriterBase(BaseWriter):
         self, func_node: FunctionNode, *, inside_class: bool
     ) -> None:
         func_type = func_node.attributes["function_type"]
+        is_overload = func_node.attributes.get("option") == "overload"
+        operator_props_map = func_node.attributes.get("operator-properties-map")
         arg_list_node = func_node.element(ArgumentListNode)
         name_node = func_node.element(NameNode)
         arg_nodes = find_children(arg_list_node, ArgumentNode)
@@ -202,6 +204,13 @@ class PyCodeWriterBase(BaseWriter):
             gen_types = f"[{func_node.attributes['generic-types']}]"
 
         if inside_class:
+            if operator_props_map is not None:
+                wt.addln(
+                    "@overload_mapping("
+                    '"operator", '
+                    f"{operator_props_map}"
+                    ")"
+                )
             if "option" in func_node.attributes:
                 if func_node.attributes["option"] == "overload":
                     wt.addln("@typing.overload")
@@ -345,6 +354,11 @@ class PyCodeWriterBase(BaseWriter):
         # TODO: refactor it to make it more generic.
         if inside_class:
             with CodeWriterIndent(2):
+                if is_overload:
+                    wt.addln(self.ellipsis_strings["method"])
+                    wt.new_line()
+                    return
+
                 # documentation
                 if (
                     not desc_node.empty()
@@ -399,6 +413,11 @@ class PyCodeWriterBase(BaseWriter):
                 wt.new_line()
         else:  # Not inside_class
             with CodeWriterIndent(1):
+                if is_overload:
+                    wt.addln(self.ellipsis_strings["function"])
+                    wt.new_line(2)
+                    return
+
                 # documentation
                 if (
                     not desc_node.empty()
@@ -650,6 +669,21 @@ class PyCodeWriterBase(BaseWriter):
             wt.addln("import collections.abc")
             wt.addln("import typing_extensions")
             wt.addln("import numpy.typing as npt")
+
+            has_operator_props_map = any(
+                "operator-properties-map" in func_node.attributes
+                for func_node in find_children(document, FunctionNode)
+            )
+            if has_operator_props_map:
+                wt.addln(
+                    "def overload_mapping("
+                    "mapped_parameter_name: str, "
+                    "operator_properties_by_name: dict[str, typing.Any]"
+                    ") -> collections.abc.Callable[[typing.Any], typing.Any]:"
+                )
+                with CodeWriterIndent(1):
+                    wt.addln(self.ellipsis_strings["function"])
+                wt.new_line(1)
 
             # import depended modules
             dep_list_node = get_first_child(document, DependencyListNode)
