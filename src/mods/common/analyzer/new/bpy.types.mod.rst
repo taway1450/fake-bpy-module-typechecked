@@ -78,6 +78,43 @@
       :rtype: int
       :mod-option rtype: skip-refine
 
+.. class:: bpy_prop_collection_idprop
+
+   built-in class used for user defined collections.
+
+   :generic-types: _GenericType1
+
+   .. base-class:: bpy_prop_collection[_GenericType1]
+
+      :mod-option base-class: skip-refine
+
+   .. method:: add()
+
+      This is a function to add a new item to a collection.
+
+      :rtype: _GenericType1
+      :mod-option rtype: skip-refine
+
+   .. method:: clear()
+
+      This is a function to remove all items from a collection.
+
+   .. method:: move(src_index, dst_index)
+
+      This is a function to move an item in a collection.
+
+      :type src_index: int
+      :mod-option arg src_index: skip-refine
+      :type dst_index: int
+      :mod-option arg dst_index: skip-refine
+
+   .. method:: remove(index)
+
+      This is a function to remove an item from a collection.
+
+      :type index: int
+      :mod-option arg index: skip-refine
+
 .. class:: ContextTempOverride
 
    .. method:: __enter__()

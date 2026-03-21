@@ -2,7 +2,7 @@
 
 .. module:: bpy.props
 
-.. function:: BoolProperty(update, get, set)
+.. function:: BoolProperty(update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -23,7 +23,7 @@
 
    :rtype: bool
 
-.. function:: BoolVectorProperty(update, get, set)
+.. function:: BoolVectorProperty(update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -45,7 +45,7 @@
    :rtype: collections.abc.Sequence[bool]
    :mod-option rtype: skip-refine
 
-.. function:: EnumProperty(items, update, get, set)
+.. function:: EnumProperty(items, update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -69,7 +69,7 @@
 
    :rtype: str
 
-.. function:: FloatProperty(update, get, set)
+.. function:: FloatProperty(update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -90,7 +90,7 @@
 
    :rtype: float
 
-.. function:: FloatVectorProperty(update, get, set)
+.. function:: FloatVectorProperty(update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -112,7 +112,7 @@
    :rtype: collections.abc.Sequence[float]
    :mod-option rtype: skip-refine
 
-.. function:: IntProperty(update, get, set)
+.. function:: IntProperty(update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -133,7 +133,7 @@
 
    :rtype: int
 
-.. function:: IntVectorProperty(update, get, set)
+.. function:: IntVectorProperty(update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -155,7 +155,7 @@
    :rtype: collections.abc.Sequence[int]
    :mod-option rtype: skip-refine
 
-.. function:: PointerProperty(type, update)
+.. function:: PointerProperty(type, update, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct, _GenericType2: bpy.types.ID
 
@@ -171,7 +171,7 @@
    :rtype: _GenericType2 | None
    :mod-option rtype: skip-refine
 
-.. function:: CollectionProperty(type)
+.. function:: CollectionProperty(type, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
@@ -181,10 +181,10 @@
    :type tags: set[str] | None
    :mod-option arg tags: skip-refine
 
-   :rtype: :class:`bpy.types.bpy_prop_collection`\ [_GenericType1]
+   :rtype: :class:`bpy.types.bpy_prop_collection_idprop`\ [_GenericType1]
    :mod-option rtype: skip-refine
 
-.. function:: StringProperty(update, get, set)
+.. function:: StringProperty(update, get, set, default, tags)
 
    :generic-types: _GenericType1: bpy.types.bpy_struct
 
