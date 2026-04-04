@@ -20,27 +20,68 @@ from fake_bpy_module.utils import (
 
 from .transformer_base import TransformerBase
 
-# FloatVectorProperty subtype-to-return-type mapping.
-# Each entry: (tuple of Literal subtype values, return type as data_type_node
-# string using backticks for ClassRef).
-_FLOAT_VECTOR_SUBTYPE_OVERLOADS: list[tuple[tuple[str, ...], str]] = [
+# FloatVectorProperty type constants.
+_FLOAT_VECTOR_BASE_RETURN = "bpy.types.bpy_prop_array[float]"
+_VECTOR_SIZED_LITERAL = "typing.Literal[2, 3, 4]"
+_COLOR_SIZED_LITERAL = "typing.Literal[3]"
+_EULER_SIZED_LITERAL = "typing.Literal[3]"
+_QUATERNION_SIZED_LITERAL = "typing.Literal[4]"
+_MATRIX_SIZED_LITERAL = "typing.Literal[9, 16]"
+_VECTOR_SIZE_LITERAL_RANGE = (
+    "typing.Literal["
+    "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, "
+    "17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31"
+    "]"
+)
+
+
+# FloatVectorProperty specialized overloads.
+# Each entry: (subtype literals, return type, required size literals).
+_FLOAT_VECTOR_SPECIALIZED_OVERLOADS: list[tuple[tuple[str, ...], str, str]] = [
+    (
+        (
+            "TRANSLATION",
+            "DIRECTION",
+            "VELOCITY",
+            "ACCELERATION",
+            "XYZ",
+            "XYZ_LENGTH",
+            "COORDINATES",
+        ),
+        "`mathutils.Vector`",
+        _VECTOR_SIZED_LITERAL,
+    ),
     (
         ("COLOR", "COLOR_GAMMA"),
         "`mathutils.Color`",
-    ),
-    (
-        ("TRANSLATION", "DIRECTION", "VELOCITY", "ACCELERATION", "XYZ"),
-        "`mathutils.Vector`",
+        _COLOR_SIZED_LITERAL,
     ),
     (
         ("EULER",),
         "`mathutils.Euler`",
+        _EULER_SIZED_LITERAL,
     ),
     (
         ("QUATERNION",),
         "`mathutils.Quaternion`",
+        _QUATERNION_SIZED_LITERAL,
+    ),
+    (
+        ("MATRIX",),
+        "`mathutils.Matrix`",
+        _MATRIX_SIZED_LITERAL,
     ),
 ]
+
+
+_FLOAT_VECTOR_BASE_SUBTYPES: tuple[str, ...] = (
+    "NONE",
+    "COLOR",
+    "AXISANGLE",
+    "MATRIX",
+    "LAYER",
+    "LAYER_MEMBER",
+)
 
 
 # EnumProperty option literals.
@@ -62,9 +103,9 @@ class BpyPropsOverloadGenerator(TransformerBase):
     * **EnumProperty** - distinguishes ``str`` vs ``set[str]`` return type
       based on whether ``'ENUM_FLAG'`` is present in the ``options``
       parameter Literal set.
-    * **FloatVectorProperty** - distinguishes ``mathutils.Color``,
-      ``mathutils.Vector``, ``mathutils.Euler``, ``mathutils.Quaternion``
-      return types based on the ``subtype`` Literal value.
+        * **FloatVectorProperty** - distinguishes specialized mathutils
+            return types based on ``subtype`` and constrained ``size``
+            Literals; defaults to ``bpy.types.bpy_prop_array[float]``.
     """
 
     # ------------------------------------------------------------------
@@ -143,6 +184,35 @@ class BpyPropsOverloadGenerator(TransformerBase):
             default_node.remove(child)
         if default_value is not None:
             append_child(default_node, nodes.Text(default_value))
+
+    def _set_subtype_literal(
+        self,
+        func_node: FunctionNode,
+        literal_values: tuple[str, ...],
+        *,
+        clear_default: bool,
+    ) -> None:
+        subtype_arg = self._find_argument(func_node, "subtype")
+        if subtype_arg is None:
+            return
+
+        literal_csv = ", ".join(f"'{v}'" for v in literal_values)
+        self._set_arg_type(subtype_arg, [f"typing.Literal[{literal_csv}]"])
+        if clear_default:
+            self._set_arg_default(subtype_arg, None)
+
+    def _set_float_vector_size_type(
+        self,
+        func_node: FunctionNode,
+        size_literal: str,
+    ) -> None:
+        size_arg = self._find_argument(func_node, "size")
+        if size_arg is None:
+            return
+        self._set_arg_type(
+            size_arg,
+            [f"{size_literal} | collections.abc.Sequence[int] | None"],
+        )
 
     @staticmethod
     def _normalize_list_to_sequence(type_str: str) -> str:
@@ -232,18 +302,20 @@ class BpyPropsOverloadGenerator(TransformerBase):
         index = list(document.children).index(target_node)
         overload_nodes: list[FunctionNode] = []
 
-        # Subtype-specific overloads
-        for literal_values, return_type_str in _FLOAT_VECTOR_SUBTYPE_OVERLOADS:
+        # Subtype and size-specific overloads.
+        for (
+            literal_values,
+            return_type_str,
+            size_literal,
+        ) in _FLOAT_VECTOR_SPECIALIZED_OVERLOADS:
             overload = target_node.deepcopy()
             overload.attributes["option"] = "overload"
-
-            subtype_arg = self._find_argument(overload, "subtype")
-            if subtype_arg is not None:
-                literal_csv = ", ".join(f"'{v}'" for v in literal_values)
-                self._set_arg_type(
-                    subtype_arg, [f"typing.Literal[{literal_csv}]"]
-                )
-                self._set_arg_default(subtype_arg, None)
+            self._set_subtype_literal(
+                overload,
+                literal_values,
+                clear_default=True,
+            )
+            self._set_float_vector_size_type(overload, size_literal)
 
             ret_dtype = make_data_type_node(return_type_str)
             ret_dtype.attributes["mod-option"] = "skip-refine"
@@ -251,17 +323,29 @@ class BpyPropsOverloadGenerator(TransformerBase):
 
             overload_nodes.append(overload)
 
-        # Default overload - catches any other subtype -> original return
+        # Base subtype overloads -> bpy_prop_array[float].
+        base_overload = target_node.deepcopy()
+        base_overload.attributes["option"] = "overload"
+        self._set_subtype_literal(
+            base_overload,
+            _FLOAT_VECTOR_BASE_SUBTYPES,
+            clear_default=False,
+        )
+        self._set_float_vector_size_type(
+            base_overload,
+            _VECTOR_SIZE_LITERAL_RANGE,
+        )
+        self._set_return_type(base_overload, [_FLOAT_VECTOR_BASE_RETURN])
+        overload_nodes.append(base_overload)
+
+        # Default overload - catches any other subtype -> bpy_prop_array[float]
         default_overload = target_node.deepcopy()
         default_overload.attributes["option"] = "overload"
-        subtype_arg = self._find_argument(default_overload, "subtype")
-        if subtype_arg is not None:
-            self._set_arg_type(subtype_arg, ["str"])
-            self._set_arg_default(subtype_arg, "'NONE'")
-        self._set_return_type(
+        self._set_float_vector_size_type(
             default_overload,
-            ["collections.abc.Sequence[float]"],
+            _VECTOR_SIZE_LITERAL_RANGE,
         )
+        self._set_return_type(default_overload, [_FLOAT_VECTOR_BASE_RETURN])
         overload_nodes.append(default_overload)
 
         # Replace the original node with all overloads.
@@ -301,11 +385,11 @@ class BpyPropsOverloadGenerator(TransformerBase):
 
             callback_value_type = ret_type_str
             if name == "FloatVectorProperty":
-                base_seq = "collections.abc.Sequence[float]"
-                if ret_type_str == base_seq:
+                base_array = "bpy.types.bpy_prop_array[float]"
+                if ret_type_str == base_array:
                     callback_value_type = ret_type_str
                 else:
-                    callback_value_type = f"{ret_type_str} | {base_seq}"
+                    callback_value_type = f"{ret_type_str} | {base_array}"
                 default_arg = self._find_argument(func_node, "default")
                 if default_arg is not None:
                     self._set_arg_type(
