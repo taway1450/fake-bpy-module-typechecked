@@ -92,6 +92,7 @@ being too big for intelliSense to work.*
 |4.4|[https://pypi.org/project/fake-bpy-module-4.4/](https://pypi.org/project/fake-bpy-module-4.4/)|
 |4.5|[https://pypi.org/project/fake-bpy-module-4.5/](https://pypi.org/project/fake-bpy-module-4.5/)|
 |5.0|[https://pypi.org/project/fake-bpy-module-5.0/](https://pypi.org/project/fake-bpy-module-5.0/)|
+|5.1|[https://pypi.org/project/fake-bpy-module-5.1/](https://pypi.org/project/fake-bpy-module-5.1/)|
 |latest|[https://pypi.org/project/fake-bpy-module/](https://pypi.org/project/fake-bpy-module/)|
 ||[https://pypi.org/project/fake-bpy-module-latest/](https://pypi.org/project/fake-bpy-module-latest/)|
 
@@ -144,6 +145,10 @@ Support via [GitHub Sponsors](https://github.com/sponsors/nutti)
 * CONTACTS: [Twitter](https://twitter.com/nutti__)
 * WEBSITE: [Japanese Only](https://colorful-pico.net/)
 
+### Reviewer
+
+* [**@Andrej730**](https://github.com/Andrej730)
+
 ### Contributors
 
 * [**@grische**](https://github.com/grische)
@@ -154,7 +159,6 @@ Support via [GitHub Sponsors](https://github.com/sponsors/nutti)
 * [**@JonathanPlasse**](https://github.com/JonathanPlasse)
 * [**@UuuNyaa**](https://github.com/UuuNyaa)
 * [**@Road-hog123**](https://github.com/Road-hog123)
-* [**@Andrej730**](https://github.com/Andrej730)
 * [**@ice3**](https://github.com/ice3)
 * [**@almarouk**](https://github.com/almarouk)
 * [**@UnknownLITE**](https://github.com/UnknownLITE)
