@@ -186,3 +186,15 @@
 
       :type vertices: collections.abc.Iterable[collections.abc.Sequence[float] | :class:`mathutils.Vector`] | None
       :mod-option arg vertices: skip-refine
+
+.. class:: UILayout
+
+   .. method:: panel()
+
+      :rtype: tuple[typing_extensions.Self, typing_extensions.Self]
+      :mod-option rtype: skip-refine
+
+   .. method:: panel_prop()
+
+      :rtype: tuple[typing_extensions.Self, typing_extensions.Self]
+      :mod-option rtype: skip-refine
